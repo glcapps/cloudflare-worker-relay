@@ -1,3 +1,4 @@
 # wrangler.toml
 name = "my-relay-worker"
 compatibility_date = "2025-03-15"
+main = "index.js"
