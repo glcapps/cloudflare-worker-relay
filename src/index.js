@@ -17,7 +17,6 @@ async function handleRequest(request) {
     });
   }
 
-  // Expect path like /openai/v1/chat/completions or /fireworks/v1/chat/completions
   const provider = pathParts[0];
   const endpointPath = '/' + pathParts.slice(1).join('/');
 
@@ -32,11 +31,35 @@ async function handleRequest(request) {
 
   const targetUrl = baseUrl + endpointPath + url.search;
 
-  // Relay request
+  let headers = new Headers(request.headers);
+  let body = request.body;
+
+  // Check for form submission and translate it to JSON
+  const contentType = headers.get('Content-Type') || '';
+  if (contentType.includes('application/x-www-form-urlencoded')) {
+    const formData = await request.formData();
+
+    const model = formData.get('model') || 'gpt-3.5-turbo';
+    const system = formData.get('systemMessage') || '';
+    const user = formData.get('userMessage') || '';
+
+    const jsonBody = JSON.stringify({
+      model: model,
+      messages: [
+        { role: 'system', content: system },
+        { role: 'user', content: user }
+      ]
+    });
+
+    headers.set('Content-Type', 'application/json');
+    body = jsonBody;
+  }
+
+  // Relay the (possibly transformed) request
   const response = await fetch(targetUrl, {
     method,
-    headers: request.headers,
-    body: request.body,
+    headers,
+    body,
     redirect: 'follow',
   });
 
