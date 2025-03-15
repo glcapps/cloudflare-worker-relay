@@ -22,12 +22,16 @@ async function handleRequest(request) {
     try {
       const body = await request.json();
       const rawKey = body.key || '';
-      if (!/^sk-|fk-/.test(rawKey)) {
+      const allowedPrefixes = ['sk-', 'fk-', 'fw_'];
+      const isValid = allowedPrefixes.some(prefix => rawKey.startsWith(prefix));
+
+      if (!isValid) {
         return new Response(JSON.stringify({ error: 'Invalid key format' }), {
           status: 400,
           headers: { 'Content-Type': 'application/json', ...corsHeaders() }
         });
       }
+
       const obfuscated = rawKey.split('').map(c => CHAR_MAP[c] || c).join('');
       return new Response(JSON.stringify({ obfuscated }), {
         status: 200,
@@ -144,7 +148,6 @@ function jsonToChatXml(json) {
   return `<chat>${messages}</chat>`;
 }
 
-// this is just for a demo - don't do this in production
 const CHAR_MAP = {
   A: 'Q', B: 'W', C: 'E', D: 'R', E: 'T', F: 'Y', G: 'U', H: 'I', I: 'O', J: 'P',
   K: 'A', L: 'S', M: 'D', N: 'F', O: 'G', P: 'H', Q: 'J', R: 'K', S: 'L', T: 'Z',
