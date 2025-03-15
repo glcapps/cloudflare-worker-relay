@@ -17,6 +17,30 @@ async function handleRequest(request) {
     });
   }
 
+  // Special POST route for key obfuscation
+  if (method === 'POST' && url.pathname === '/obfuscate-key') {
+    try {
+      const body = await request.json();
+      const rawKey = body.key || '';
+      if (!/^sk-|fk-/.test(rawKey)) {
+        return new Response(JSON.stringify({ error: 'Invalid key format' }), {
+          status: 400,
+          headers: { 'Content-Type': 'application/json', ...corsHeaders() }
+        });
+      }
+      const obfuscated = rawKey.split('').map(c => CHAR_MAP[c] || c).join('');
+      return new Response(JSON.stringify({ obfuscated }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json', ...corsHeaders() }
+      });
+    } catch (err) {
+      return new Response(JSON.stringify({ error: 'Bad Request' }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json', ...corsHeaders() }
+      });
+    }
+  }
+
   const provider = pathParts[0];
   const endpointPath = '/' + pathParts.slice(1).join('/');
 
@@ -118,4 +142,28 @@ function jsonToChatXml(json) {
   }).join('\n');
 
   return `<chat>${messages}</chat>`;
+}
+
+// this is just for a demo - don't do this in production
+const CHAR_MAP = {
+  A: 'Q', B: 'W', C: 'E', D: 'R', E: 'T', F: 'Y', G: 'U', H: 'I', I: 'O', J: 'P',
+  K: 'A', L: 'S', M: 'D', N: 'F', O: 'G', P: 'H', Q: 'J', R: 'K', S: 'L', T: 'Z',
+  U: 'X', V: 'C', W: 'V', X: 'B', Y: 'N', Z: 'M',
+  a: 'q', b: 'w', c: 'e', d: 'r', e: 't', f: 'y', g: 'u', h: 'i', i: 'o', j: 'p',
+  k: 'a', l: 's', m: 'd', n: 'f', o: 'g', p: 'h', q: 'j', r: 'k', s: 'l', t: 'z',
+  u: 'x', v: 'c', w: 'v', x: 'b', y: 'n', z: 'm',
+  0: '9', 1: '8', 2: '7', 3: '6', 4: '5', 5: '4', 6: '3', 7: '2', 8: '1', 9: '0',
+  '-': '-', '_': '_'
+};
+
+const REVERSE_MAP = Object.fromEntries(Object.entries(CHAR_MAP).map(([k, v]) => [v, k]));
+
+function decodeObfuscatedKey(obfuscated) {
+  return obfuscated.split('').map(c => REVERSE_MAP[c] || c).join('');
+}
+
+function safeBase64Decode(str) {
+  str = str.replace(/-/g, '+').replace(/_/g, '/');
+  while (str.length % 4 !== 0) str += '=';
+  return atob(str);
 }
