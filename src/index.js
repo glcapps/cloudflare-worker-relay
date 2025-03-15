@@ -24,7 +24,7 @@ async function handleRequest(request) {
   if (provider === 'openai') {
     baseUrl = 'https://api.openai.com';
   } else if (provider === 'fireworks') {
-    baseUrl = 'https://api.fireworks.ai';
+    baseUrl = 'https://api.fireworks.ai/inference';
   } else {
     return new Response('Unsupported provider', { status: 400, headers: corsHeaders() });
   }
